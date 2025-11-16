@@ -1,218 +1,303 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#0b1220" />
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>VR Explorer</title>
 
-  <title>VR Explorer</title>
-  <link rel="manifest" href="/manifest.json">
-  <link rel="icon" href="data:," />
+<!-- PWA Manifest -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#000000">
 
-  <style>
-    html,body{height:100%;margin:0;background:#071026;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial}
-    @media (orientation:portrait){
-      .landscape-warning{display:flex}
-    }
+<!-- A-Frame for VR -->
+<script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
 
-    .app{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:18px;box-sizing:border-box}
-    h1{font-size:clamp(28px,6vw,48px);margin:8px 0}
-    h2{font-size:18px;margin:6px 0 16px 0;color:#cbe7ff}
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: black;
+    color: white;
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
 
-    .controls{display:flex;gap:12px;align-items:center;margin-bottom:18px}
-    select{padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.03);color:#fff;font-size:15px}
+  h1 {
+    margin-top: 40px;
+    margin-bottom: 20px;
+    font-size: 3em;
+    text-align: center;
+  }
 
-    .footer{margin-top:auto;font-size:12px;font-style:italic;opacity:0.8;padding-bottom:6px}
+  h2 {
+    margin-top: 40px;
+    margin-bottom: 10px;
+    font-size: 2em;
+    text-align: center;
+  }
 
-    .start-btn{margin-top:8px;padding:10px 14px;border-radius:10px;border:none;background:linear-gradient(90deg,#2b8bd6,#0066cc);color:white;font-weight:600}
+  .section {
+    margin-bottom: 30px;
+    text-align: center;
+    width: 90%;
+    max-width: 500px;
+  }
 
-    .player-wrap{position:fixed;inset:0;display:none;background:black;z-index:60;align-items:center;justify-content:center}
-    .player-toolbar{position:absolute;top:10px;left:10px;z-index:120}
-    .player-toolbar button{padding:8px 12px;border-radius:8px;border:none;background:rgba(255,255,255,0.08);color:#fff}
+  label {
+    display: block;
+    margin-bottom: 5px;
+  }
 
-    .cardboard{display:flex;width:100%;height:100%;overflow:hidden}
-    .cardboard iframe{flex:1;border:0;height:100%;width:50vw}
+  select {
+    width: 100%;
+    font-size: 1em;
+    padding: 5px;
+    margin-bottom: 10px;
+  }
 
-    .mono iframe{width:100%;height:100%}
+  .or-text {
+    font-weight: bold;
+    margin: 10px 0;
+  }
 
-    .landscape-warning{position:fixed;inset:0;background:#071026;z-index:9999;display:none;align-items:center;justify-content:center;color:#fff;text-align:center;padding:20px}
-  </style>
+  .go-button {
+    background-color: grey;
+    color: white;
+    font-size: 1.5em;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+
+  .go-button.active {
+    background-color: green;
+  }
+
+  .safe-mode-section {
+    margin-top: 30px;
+    text-align: center;
+  }
+
+  .safe-mode-label {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 1.1em;
+  }
+
+  .safe-mode-label input[type="radio"] {
+    margin-right: 10px;
+    accent-color: #0f0;
+    width: 20px;
+    height: 20px;
+  }
+
+  footer {
+    margin-top: 40px;
+    margin-bottom: 20px;
+    font-size: 0.8em;
+    font-style: italic;
+  }
+
+  /* IPD slider */
+  #ipdSlider {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    display: none;
+    z-index: 1000;
+  }
+
+  #vr-container {
+    display: none;
+    width: 100%;
+    height: 100vh;
+  }
+
+</style>
 </head>
 <body>
-  <div class="landscape-warning" id="landWarn">
-    <div>
-      <h1>Please rotate your device</h1>
-      <p>VR Explorer works best in landscape orientation.</p>
-    </div>
+
+<h1>VR Explorer</h1>
+
+<div class="section" id="select-simulation-section">
+  <h2>Step 1: Select Simulation</h2>
+
+  <div>
+    <label for="audienceDropdown">Presentation Audiences:</label>
+    <select id="audienceDropdown">
+      <option value="">--Select Option--</option>
+    </select>
   </div>
 
-  <main class="app" id="app">
-    <h1>VR Explorer</h1>
-    <h2>Select Simulation</h2>
+  <div class="or-text">OR</div>
 
-    <div class="controls" aria-hidden="false">
-      <div>
-        <label for="audience">Audience Sizes</label><br>
-        <select id="audience"></select>
-      </div>
-      <div>
-        <label for="scenarios">Special Scenarios</label><br>
-        <select id="scenarios"></select>
-      </div>
-      <div>
-        <button id="openBtn" class="start-btn">Open in Cardboard VR</button>
-      </div>
-    </div>
-
-    <div class="footer">VR Explorer 1.1 brought to you by Cambridge VR</div>
-  </main>
-
-  <div class="player-wrap" id="playerWrap">
-    <div class="player-toolbar">
-      <button id="exitBtn">Exit VR</button>
-    </div>
-    <div id="playerArea" class="cardboard" aria-live="polite"></div>
+  <div>
+    <label for="scenarioDropdown">Special Scenarios:</label>
+    <select id="scenarioDropdown">
+      <option value="">--Select Option--</option>
+    </select>
   </div>
+</div>
 
-  <script>
-    const VIDEOS = {
-      "Audience Sizes": [
-        { id: 'N0-CF', title: 'Audience of 0', url: 'https://player.virtualrealitypublicspeaking.com/?video=N0-CF' },
-        { id: 'N1-CF', title: 'Audience of 1', url: 'https://player.virtualrealitypublicspeaking.com/?video=N1-CF' },
-        { id: 'N2-CF', title: 'Audience of 2', url: 'https://player.virtualrealitypublicspeaking.com/?video=N2-CF' },
-        { id: 'N4-CF', title: 'Audience of 4', url: 'https://player.virtualrealitypublicspeaking.com/?video=N4-CF' },
-        { id: 'N9-CF', title: 'Audience of 9', url: 'https://player.virtualrealitypublicspeaking.com/?video=N9-CF' },
-        { id: 'N16-CF', title: 'Audience of 16', url: 'https://player.virtualrealitypublicspeaking.com/?video=N16-CF' },
-        { id: 'N25-CF', title: 'Audience of 25', url: 'https://player.virtualrealitypublicspeaking.com/?video=N25-CF' },
-        { id: 'N50-CF', title: 'Audience of 50', url: 'https://player.virtualrealitypublicspeaking.com/?video=N50-CF' },
-        { id: 'N100-CF', title: 'Audience of 100', url: 'https://player.virtualrealitypublicspeaking.com/?video=N100-CF' },
-        { id: 'N500-CF', title: 'Audience of 500', url: 'https://player.virtualrealitypublicspeaking.com/?video=N500-CF' },
-        { id: 'N10K-CF', title: 'Audience of 1000s', url: 'https://player.virtualrealitypublicspeaking.com/?video=N10K-CF' }
-      ],
-      "Special Scenarios": [
-        { id: 'ACC01-CF', title: 'TV teleprompter', url: 'https://player.virtualrealitypublicspeaking.com/?video=ACC01-CF' },
-        { id: 'JIC01-CF', title: 'Job interview', url: 'https://player.virtualrealitypublicspeaking.com/?video=JIC01-CF' },
-        { id: 'RIC01-CF', title: 'Radio interview', url: 'https://player.virtualrealitypublicspeaking.com/?video=RIC01-CF' }
-      ]
-    };
+<div class="section" id="enter-simulation-section">
+  <h2>Step 2: Enter Simulation</h2>
+  <button class="go-button" id="goButton">Go</button>
+</div>
 
-    const audienceSel = document.getElementById('audience');
-    const scenariosSel = document.getElementById('scenarios');
+<div class="section safe-mode-section" id="optional-settings">
+  <h3 style="font-size:1.2em;">Optional Settings</h3>
 
-    VIDEOS['Audience Sizes'].forEach(v=>{
-      const o = document.createElement('option'); 
-      o.value = v.url; 
-      o.textContent = v.title; 
-      audienceSel.appendChild(o);
-    });
+  <label class="safe-mode-label"><input type="radio" name="safeMode" value="safe1">Safe Mode 1</label>
+  <label class="safe-mode-label"><input type="radio" name="safeMode" value="safe2">Safe Mode 2 (IPD Adjustable)</label>
+</div>
 
-    VIDEOS['Special Scenarios'].forEach(v=>{
-      const o = document.createElement('option'); 
-      o.value = v.url; 
-      o.textContent = v.title; 
-      scenariosSel.appendChild(o);
-    });
+<div id="vr-container">
+  <a-scene id="aframeScene" embedded vr-mode-ui="enterVRButton: false">
+    <a-videosphere id="vrVideoSphere" src="" rotation="0 180 0" loop autoplay="true" sound="autoplay: true"></a-videosphere>
+    <a-camera position="0 1.6 0"></a-camera>
+  </a-scene>
+  <input type="range" min="0.05" max="0.15" step="0.005" value="0.065" id="ipdSlider">
+</div>
 
-    function getSelectedURL(){
-      return audienceSel.value || scenariosSel.value;
+<footer>VR Explorer 1.1 brought to you by Cambridge VR</footer>
+
+<script>
+  // ===================== VIDEO LINKS =====================
+  const audienceVideos = {
+    default: {
+      "Audience of 0":"https://pub-850a8ef9d4f34159a20706a415caaaf8.r2.dev/N0-CF.h264.mp4",
+      "Audience of 1":"https://pub-850a8ef9d4f34159a20706a415caaaf8.r2.dev/N1-CF.h264.mp4",
+      "Audience of 2":"https://pub-850a8ef9d4f34159a20706a415caaaf8.r2.dev/N2-CF.h264.mp4",
+      "Audience of 4":"https://pub-850a8ef9d4f34159a20706a415caaaf8.r2.dev/N4-CF.h264.mp4",
+      "Audience of 9":"https://pub-850a8ef9d4f34159a20706a415caaaf8.r2.dev/N9-CF.h264.mp4",
+      "Audience of 16":"https://pub-850a8ef9d4f34159a20706a415caaaf8.r2.dev/N16-CF.h264.mp4",
+      "Audience of 25":"https://pub-850a8ef9d4f34159a20706a415caaaf8.r2.dev/N25-CF.h264.mp4",
+      "Audience of 50":"https://pub-850a8ef9d4f34159a20706a415caaaf8.r2.dev/N50-CF.h264.mp4",
+      "Audience of 100":"https://pub-850a8ef9d4f34159a20706a415caaaf8.r2.dev/N100-CF.h264.mp4",
+      "Audience of 500":"https://pub-850a8ef9d4f34159a20706a415caaaf8.r2.dev/N500-CF.h264.mp4",
+      "Audience of 1000s":"https://pub-850a8ef9d4f34159a20706a415caaaf8.r2.dev/N10K-CF.h264.mp4",
+      "TV teleprompter":"https://pub-850a8ef9d4f34159a20706a415caaaf8.r2.dev/ACC01-CF.h264.mp4",
+      "Job interview":"https://pub-850a8ef9d4f34159a20706a415caaaf8.r2.dev/JIC01-CF.h264.mp4",
+      "Radio interview":"https://pub-850a8ef9d4f34159a20706a415caaaf8.r2.dev/RIC01-CF.h264.mp4"
+    },
+    youtube: {
+      "Audience of 0":"https://www.youtube.com/watch?v=8D5ZJjV-9No&feature=youtu.be",
+      "Audience of 1":"https://www.youtube.com/watch?v=L61TY-lVWYc&feature=youtu.be",
+      "Audience of 2":"https://www.youtube.com/watch?v=jisLJabMOaw&feature=youtu.be",
+      "Audience of 4":"https://www.youtube.com/watch?v=583YioSTgGE&feature=youtu.be",
+      "Audience of 9":"https://www.youtube.com/watch?v=7AS7NEA9PFo&feature=youtu.be",
+      "Audience of 16":"https://www.youtube.com/watch?v=_y-lSw1SNaU&feature=youtu.be",
+      "Audience of 25":"https://www.youtube.com/watch?v=CBBwXbX5ogE",
+      "Audience of 50":"https://www.youtube.com/watch?v=RUnKCfWFSfI",
+      "Audience of 100":"https://www.youtube.com/watch?v=ww986pYF46E",
+      "Audience of 500":"https://www.youtube.com/watch?v=S3Ve7FGfjWk",
+      "Audience of 1000s":"https://www.youtube.com/watch?v=jyUNFPBmJkA",
+      "TV teleprompter":"https://www.youtube.com/watch?v=3ZNddx_YNc0",
+      "Job interview":"https://www.youtube.com/watch?v=-tsxJfabw0s",
+      "Radio interview":"https://www.youtube.com/watch?v=sE3pahN4BwI"
     }
+  };
 
-    const playerWrap = document.getElementById('playerWrap');
-    const playerArea = document.getElementById('playerArea');
-    const openBtn = document.getElementById('openBtn');
-    const exitBtn = document.getElementById('exitBtn');
-    let currentURL = null;
+  const scenarioVideos = audienceVideos; // Reuse for simplicity; can separate if needed
 
-    openBtn.addEventListener('click', ()=>{
-      const url = getSelectedURL();
-      if(!url){alert('Please select a simulation.');return}
-      currentURL = url;
-      openCardboard(url);
-    });
+  // ===================== POPULATE DROPDOWNS =====================
+  const audienceDropdown = document.getElementById('audienceDropdown');
+  const scenarioDropdown = document.getElementById('scenarioDropdown');
 
-    exitBtn.addEventListener('click', ()=>{ closeCardboard(); });
+  Object.keys(audienceVideos.default).forEach(key => {
+    let option = document.createElement('option');
+    option.value = key;
+    option.textContent = key;
+    audienceDropdown.appendChild(option);
+  });
 
-    function openCardboard(url){
-      playerArea.className = 'cardboard';
-      playerArea.innerHTML = '';
+  Object.keys(scenarioVideos.default).forEach(key => {
+    let option = document.createElement('option');
+    option.value = key;
+    option.textContent = key;
+    scenarioDropdown.appendChild(option);
+  });
 
-      const left = document.createElement('iframe');
-      const right = document.createElement('iframe');
+  // ===================== BUTTON LOGIC =====================
+  const goButton = document.getElementById('goButton');
+  const vrContainer = document.getElementById('vr-container');
+  const vrVideoSphere = document.getElementById('vrVideoSphere');
+  const ipdSlider = document.getElementById('ipdSlider');
+  const safeModeRadios = document.querySelectorAll('input[name="safeMode"]');
 
-      [left,right].forEach(f => {
-        f.setAttribute('allow','autoplay; fullscreen; accelerometer; gyroscope; xr-spatial-tracking');
-        f.src = url;
+  function getSelectedVideo() {
+    return audienceDropdown.value || scenarioDropdown.value || null;
+  }
+
+  function updateGoButton() {
+    if (getSelectedVideo()) {
+      goButton.classList.add('active');
+    } else {
+      goButton.classList.remove('active');
+    }
+  }
+
+  audienceDropdown.addEventListener('change', () => {
+    scenarioDropdown.value = "";
+    updateGoButton();
+  });
+
+  scenarioDropdown.addEventListener('change', () => {
+    audienceDropdown.value = "";
+    updateGoButton();
+  });
+
+  // Safe mode selection - only one at a time
+  safeModeRadios.forEach(radio => {
+    radio.addEventListener('change', () => {
+      safeModeRadios.forEach(r => {
+        if (r !== radio) r.checked = false;
       });
+    });
+  });
 
-      playerArea.appendChild(left);
-      playerArea.appendChild(right);
+  // ===================== GO BUTTON CLICK =====================
+  goButton.addEventListener('click', () => {
+    const selected = getSelectedVideo();
+    if (!selected) return;
 
-      playerWrap.style.display = 'flex';
+    const safeMode = document.querySelector('input[name="safeMode"]:checked')?.value || "default";
 
-      if(playerWrap.requestFullscreen){
-        playerWrap.requestFullscreen().catch(()=>{});
-      }
+    if (safeMode === "safe1") {
+      // YouTube safe mode
+      window.open(audienceVideos.youtube[selected], "_blank");
+    } else {
+      // Default / Safe Mode 2
+      vrContainer.style.display = "block";
+      document.body.scrollIntoView({behavior:"smooth"});
 
-      updateLandscapeWarning();
-    }
-
-    function closeCardboard(){
-      if(document.fullscreenElement){
-        document.exitFullscreen().catch(()=>{});
-      }
-      playerWrap.style.display = 'none';
-      playerArea.innerHTML = '';
-      currentURL = null;
-      window.scrollTo(0,0);
-    }
-
-    const landWarn = document.getElementById('landWarn');
-
-    function updateLandscapeWarning(){
-      if(window.matchMedia('(orientation:portrait)').matches){
-        landWarn.style.display = 'flex';
+      if (safeMode === "safe2") {
+        ipdSlider.style.display = "block";
       } else {
-        landWarn.style.display = 'none';
+        ipdSlider.style.display = "none";
       }
+
+      // Load video
+      vrVideoSphere.setAttribute('src', audienceVideos.default[selected]);
     }
+  });
 
-    window.addEventListener('orientationchange', updateLandscapeWarning);
-    updateLandscapeWarning();
+  // ===================== IPD SLIDER =====================
+  ipdSlider.addEventListener('input', (e) => {
+    const value = parseFloat(e.target.value);
+    const camera = document.querySelector('a-camera');
+    camera.setAttribute('camera', `userHeight: 1.6; interPupillaryDistance: ${value}`);
+  });
 
-    let deferredPrompt;
-    window.addEventListener('beforeinstallprompt', (e)=>{
-      e.preventDefault();
-      deferredPrompt = e;
-      showInstallCTA();
-    });
+</script>
 
-    function showInstallCTA(){
-      if(!deferredPrompt) return;
-      const btn = document.createElement('button');
-      btn.textContent = 'Install App';
-      btn.className='start-btn';
-      btn.style.marginLeft='12px';
-      btn.addEventListener('click', async ()=>{
-        deferredPrompt.prompt();
-        await deferredPrompt.userChoice;
-        deferredPrompt = null;
-        btn.remove();
-      });
-      document.querySelector('.controls').appendChild(btn);
-    }
-
-    if('serviceWorker' in navigator){
-      navigator.serviceWorker.register('/sw.js').catch(()=>{});
-    }
-
-    if(screen.orientation && screen.orientation.lock){
-      screen.orientation.lock('landscape').catch(()=>{});
-    }
-
-    window.addEventListener('keydown', (ev)=>{ if(ev.key==='Escape') closeCardboard(); });
-  </script>
 </body>
 </html>
