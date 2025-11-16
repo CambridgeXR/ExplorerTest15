@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vr-explorer-cache-v1';
+const CACHE_NAME = 'vr-explorer-cache-v15';
 const urlsToCache = [
   '/',
   '/ExplorerTest15/index.html',
@@ -6,21 +6,19 @@ const urlsToCache = [
   '/ExplorerTest15/icons/icon-192.png',
   '/ExplorerTest15/icons/icon-512.png',
   'https://aframe.io/releases/1.4.2/aframe.min.js'
-  // Note: Optionally, you can pre-cache small MP4s if desired
+  // Videos are not cached due to size; they load from Cloudflare
 ];
 
-// Install Service Worker and cache resources
+// Install Service Worker
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
-      })
+      .then(cache => cache.addAll(urlsToCache))
+      .then(() => self.skipWaiting())
   );
 });
 
-// Activate SW and clean up old caches
+// Activate Service Worker and remove old caches
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames =>
@@ -32,15 +30,10 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Intercept fetch requests and serve cached content if available
+// Intercept fetch requests and serve cached content
 self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request)
-      .then(response => {
-        if (response) {
-          return response; // Return cached response
-        }
-        return fetch(event.request); // Fetch from network
-      })
+      .then(response => response || fetch(event.request))
   );
 });
